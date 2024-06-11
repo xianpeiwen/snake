@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>贪吃蛇</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <style>
+        .box{
+            border: 1px solid black;
+            display: inline-block;
+        }
+        .unit{
+            border: 1px dotted black;
+            display: inline-block;
+        }
+        .empty{
+            background: white;
+        }
+        .black{
+            background: black;
+        }
+        .head{
+            background: black;
+        }
+        .food{
+            background: red;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        格子：<input type="text" v-model="inputSize">
+        宽：<input type="text" v-model="wLength">
+        高：<input type="text" v-model="hLength">
+        速度：<input type="text" v-model="speed">
+        <button @click="restart">重置</button>
+        <button @click="startOrPause">开始|暂停(space)</button>
+        <br>
+        得分：{{snakeBody.length - 1}}
+        <br>
+        <div class="box">
+            <div v-for="x,xi in box" style="display: flex">
+                <div class="unit" v-bind:style="{ width: size + 'px', height: size + 'px' }" v-bind:class="className[y]" v-for="y,yi in x"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            inputSize: 10,
+            size: 5,
+            wLength: 100,
+            hLength: 70,
+            className: ['empty','black','head','food'],
+            box: [],
+            headX: 0,
+            headY: 0,
+            direction: 'right',
+            foodX: 0,
+            foodY: 0,
+            snakeBody:[],
+
+            timer: '',
+            speed: 500,
+        },
+        created(){
+            this.restart();
+        },
+        mounted(){
+            this.keyDown();
+        },
+        methods:{
+            keyDown() {
+                document.onkeydown =  (e) => {
+                    //事件对象兼容
+                    let e1 = e || event || window.event || arguments.callee.caller.arguments[0];
+                    //键盘按键判断:左箭头-37;上箭头-38；右箭头-39;下箭头-40
+                    if (e1 && e1.keyCode === 37) {
+                        this.moveOn('left');
+                    } else if (e1 && e1.keyCode === 38) {
+                        this.moveOn('up');
+                    } else if (e1 && e1.keyCode === 39) {
+                        this.moveOn('right');
+                    } else if (e1 && e1.keyCode === 40) {
+                        this.moveOn('down');
+                    } else if (e1 && e1.keyCode === 32) {
+                        this.startOrPause();
+                    }
+                }
+            },
+
+            moveOn(direction){
+                if (!direction) {
+                    direction = this.direction;
+                }
+                if (direction === 'left') {
+                    if (this.direction === 'right') return;
+                    if (this.headY === 0) return this.gameOver();
+                    this.headY -= 1;
+                } else if (direction === 'up') {
+                    if (this.direction === 'down') return;
+                    if (this.headX === 0) return this.gameOver();
+                    this.headX -= 1;
+                } else if (direction === 'right') {
+                    if (this.direction === 'left') return;
+                    if (this.headY === this.wLength - 1) return this.gameOver();
+                    this.headY += 1;
+                } else if (direction === 'down') {
+                    if (this.direction === 'up') return;
+                    if (this.headX === this.hLength - 1) return this.gameOver();
+                    this.headX += 1;
+                }else {
+                    return;
+                }
+                if ([0,3].indexOf(this.box[this.headX][this.headY]) === -1) return this.gameOver();
+                this.direction = direction;
+                this.box[this.headX][this.headY] = 2;
+                this.snakeBody.push([this.headX, this.headY]);
+
+                if (this.headX === this.foodX && this.headY === this.foodY){
+                    this.buildFood();
+                }else {
+                    this.box[this.snakeBody[0][0]][this.snakeBody[0][1]] = 0;
+                    this.snakeBody.shift();
+                }
+            },
+
+            gameOver(){
+                alert('game over!');
+                this.restart();
+            },
+
+            restart(){
+                this.box = [];
+                this.headX = 0;
+                this.headY = 0;
+                this.direction = 'right';
+                this.snakeBody = [];
+                this.size = this.inputSize;
+                for (let i=0;i<this.hLength;i++){
+                    let row = [];
+                    for (let j=0;j<this.wLength;j++){
+                        row.push(0);
+                    }
+                    this.box.push(row);
+                }
+                this.box[this.headX][this.headY] = 2;
+                this.snakeBody.push([this.headX, this.headY]);
+                this.buildFood();
+                this.delTime();
+            },
+
+            buildFood(){
+                let x = 0;
+                let y = 0;
+                do {
+                    x = Math.floor(Math.random() * this.hLength);
+                    y = Math.floor(Math.random() * this.wLength);
+                } while (this.box[x][y] !== 0);
+
+                this.box[x][y] = 3;
+                this.foodX = x;
+                this.foodY = y;
+            },
+
+            setTime() {
+                this.delTime();
+                if (this.speed > 0){
+                    this.timer = setInterval(this.moveOn, this.speed);
+                }
+            },
+
+            delTime(){
+                if (this.timer){
+                    clearInterval(this.timer);
+                    this.timer = '';
+                }
+            },
+
+            startOrPause(){
+                if (this.timer){
+                    this.delTime();
+                } else {
+                    this.setTime();
+                }
+            }
+        }
+    })
+</script>
